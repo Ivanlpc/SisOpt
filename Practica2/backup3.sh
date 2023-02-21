@@ -1,8 +1,7 @@
 #!/bin/bash
-for j in "$@"
+for i in "$@"
 do
-    for i in `ls $j`
-    do
+    
     if [ ! -f "$i" ]
     then
         echo "$i no existe"
@@ -18,5 +17,5 @@ do
         fi
         cp $i "./backup/$fecha/$i"
     fi
-    done
+    
 done
