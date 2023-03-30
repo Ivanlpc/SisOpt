@@ -48,9 +48,23 @@ int main(void)
 			 (4) Shell shows a status message for processed command 
 			 (5) loop returns to get_commnad() function
 		*/
-		pid_t pid = fork();
-		if(pid == 0) {
+		pid_fork = fork();
+		if(pid_fork == 0) { //Proceso hijo
+			execvp(args[0], args);
+			printf("Error, command not found: %s\n", args[0]);
+			exit(-1);
+		} else {
 			
+			if(background == 0) {
+				waitpid(pid_fork, &status, 0);
+				status_res = analyze_status(status, &info);
+				printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res] , info);
+				
+			} else {
+				printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
+
+			}
+
 		}
 	} // end while
 }
