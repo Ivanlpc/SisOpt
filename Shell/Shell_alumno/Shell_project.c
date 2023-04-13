@@ -17,7 +17,7 @@ To compile and run the program:
 **/
 
 #include "job_control.h"   // remember to compile with module job_control.c 
-
+#include "string.h"
 #define MAX_LINE 256 /* 256 chars per line, per command, should be enough. */
 
 // -----------------------------------------------------------------------
@@ -35,6 +35,8 @@ int main(void)
 	enum status status_res; /* status processed by analyze_status() */
 	int info;				/* info processed by analyze_status() */
 
+	ignore_terminal_signals();
+	job * lista_trabajos = new_list("Tareas");
 	while (1)   /* Program terminates normally inside get_command() after ^D is typed*/
 	{   		
 		printf("COMMAND->");
@@ -50,23 +52,35 @@ int main(void)
 			 (4) Shell shows a status message for processed command 
 			 (5) loop returns to get_commnad() function
 		*/
-		pid_fork = fork();
-		if(pid_fork == 0) { //Proceso hijo
-			execvp(args[0], args);
-			printf("Error, command not found: %s\n", args[0]);
-			exit(-1);
-		} else {
+		if(strcmp(args[0], "cd") == 0) {
 
-			if(background == 0) {
-				waitpid(pid_fork, &status, 0);
-				status_res = analyze_status(status, &info);
-				printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res] , info);
-				
+			chdir(args[1]);
+		} else {
+			pid_fork = fork();
+			if(pid_fork == 0) { //Proceso hijo
+				new_process_group(getpid());
+				if(background == 0) {
+					set_terminal(getpid());
+				}
+				restore_terminal_signals();
+				execvp(args[0], args);
+				printf("Error, command not found: %s\n", args[0]);
+				exit(-1);
 			} else {
-				printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
+				
+				if(background == 0) {
+					
+					waitpid(pid_fork, &status, WUNTRACED);
+					set_terminal(getpid());
+					status_res = analyze_status(status, &info);
+					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res] , info);
+					
+				} else {
+					printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
+
+				}
 
 			}
-
 		}
 	} // end while
 }
