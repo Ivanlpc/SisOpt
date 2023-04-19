@@ -23,6 +23,33 @@ To compile and run the program:
 // -----------------------------------------------------------------------
 //                            MAIN          
 // -----------------------------------------------------------------------
+job * lista_trabajos;
+
+void manejador() {
+	block_SIGCHLD();
+	for(int i = list_size(lista_trabajos); i >= 1 ; i--) {
+		job *trabajo = get_item_bypos(lista_trabajos, i);
+		if(trabajo != NULL) {
+			int estado, info;
+			int pid = trabajo -> pgid;
+			enum status status_res;
+			if(pid == waitpid(pid, &estado, WUNTRACED | WNOHANG)) {
+				status_res = analyze_status(estado, &info);
+				if(status_res == EXITED || status_res == SIGNALED ) {
+					printf("Background process %s (%d) %s\n", trabajo ->command, trabajo -> pgid, status_strings[status_res]);
+					printf("COMMAND->");
+					fflush(stdout);
+					delete_job(lista_trabajos, trabajo);
+				} else if (status_res == SUSPENDED) {
+					trabajo -> state = STOPPED;
+				} else if (status_res == CONTINUED) {
+					trabajo -> state == BACKGROUND;
+				}
+			}
+		}
+	}
+	unblock_SIGCHLD();
+}
 
 int main(void)
 {
@@ -36,7 +63,9 @@ int main(void)
 	int info;				/* info processed by analyze_status() */
 
 	ignore_terminal_signals();
-	job * lista_trabajos = new_list("Tareas");
+	signal(SIGCHLD, manejador);
+	
+	lista_trabajos = new_list("Tareas");
 	while (1)   /* Program terminates normally inside get_command() after ^D is typed*/
 	{   		
 		printf("COMMAND->");
@@ -53,8 +82,8 @@ int main(void)
 			 (5) loop returns to get_commnad() function
 		*/
 		if(strcmp(args[0], "cd") == 0) {
-
 			chdir(args[1]);
+			printf("Ejecutando comando interno cd...");
 		} else {
 			pid_fork = fork();
 			if(pid_fork == 0) { //Proceso hijo
@@ -72,15 +101,22 @@ int main(void)
 					
 					waitpid(pid_fork, &status, WUNTRACED);
 					set_terminal(getpid());
+					
 					status_res = analyze_status(status, &info);
+					if(status_res == SUSPENDED) {
+						add_job(lista_trabajos, new_job(pid_fork, args[0], STOPPED));
+						printf("Trabajo suspendido añadido");
+					}
 					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res] , info);
 					
 				} else {
 					printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
-
+					job * trabajo = new_job(pid_fork, args[0], BACKGROUND);
+					add_job(lista_trabajos, trabajo);
 				}
 
 			}
 		}
 	} // end while
 }
+
