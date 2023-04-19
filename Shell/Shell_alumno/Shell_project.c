@@ -83,7 +83,6 @@ int main(void)
 		*/
 		if(strcmp(args[0], "cd") == 0) {
 			chdir(args[1]);
-			printf("Ejecutando comando interno cd...");
 		} else {
 			pid_fork = fork();
 			if(pid_fork == 0) { //Proceso hijo
@@ -105,7 +104,6 @@ int main(void)
 					status_res = analyze_status(status, &info);
 					if(status_res == SUSPENDED) {
 						add_job(lista_trabajos, new_job(pid_fork, args[0], STOPPED));
-						printf("Trabajo suspendido añadido");
 					}
 					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res] , info);
 					
