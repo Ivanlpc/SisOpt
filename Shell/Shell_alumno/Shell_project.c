@@ -33,7 +33,7 @@ void manejador() {
 			int estado, info;
 			int pid = trabajo -> pgid;
 			enum status status_res;
-			if(pid == waitpid(pid, &estado, WUNTRACED | WNOHANG)) {
+			if(pid == waitpid(pid, &estado, WUNTRACED | WNOHANG | WCONTINUED)) {
 				status_res = analyze_status(estado, &info);
 				if(status_res == EXITED || status_res == SIGNALED ) {
 					printf("Background process %s (%d) %s\n", trabajo ->command, trabajo -> pgid, status_strings[status_res]);
@@ -83,6 +83,61 @@ int main(void)
 		*/
 		if(strcmp(args[0], "cd") == 0) {
 			chdir(args[1]);
+
+		} else if(strcmp(args[0], "jobs") == 0) {
+			print_job_list(lista_trabajos);	
+
+		} else if(strcmp(args[0], "fg") == 0) {
+
+			int n = 1;
+			if(args[1] != NULL) {
+				n = atoi(args[1]); //ASCII
+			}
+			job * trabajo = get_item_bypos(lista_trabajos, n);
+
+			if(trabajo != NULL) {
+				enum job_state estado = trabajo ->state;
+				if(estado == STOPPED || estado == BACKGROUND){
+
+					int pid_trabajo = trabajo -> pgid;
+					set_terminal(pid_trabajo);
+					trabajo ->state = FOREGROUND;
+					killpg(pid_trabajo, SIGCONT);
+					waitpid(pid_trabajo, &status, WUNTRACED);
+					set_terminal(getpid());
+					status_res = analyze_status(status, &info);
+					char * comando = strdup(trabajo -> command);
+					if(status_res == SUSPENDED) {
+						trabajo -> state = STOPPED;
+					} else {
+						delete_job(lista_trabajos, trabajo);
+					}
+					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_trabajo, comando, status_strings[status_res] , info);
+				}
+				
+			} else {
+				printf("Error: Job not found: %d\n", n);
+			}
+
+		} else if(strcmp(args[0], "bg") == 0) {
+			
+			int n = 1;
+			if(args[1] != NULL) {
+				n = atoi(args[1]); //ASCII
+			}
+			job * trabajo = get_item_bypos(lista_trabajos, n);
+			if(trabajo != NULL) {
+				if(trabajo -> state == STOPPED) {
+					int pid_trabajo = trabajo -> pgid;
+					char * name = strdup(trabajo -> command);
+					trabajo -> state = BACKGROUND;
+					killpg(pid_trabajo, SIGCONT);
+					printf("Background job running... pid: %d, command: %s\n", pid_trabajo, name);
+				}
+			} else {
+				printf("Error: Job not found: %d\n", n);
+			}
+
 		} else {
 			pid_fork = fork();
 			if(pid_fork == 0) { //Proceso hijo
