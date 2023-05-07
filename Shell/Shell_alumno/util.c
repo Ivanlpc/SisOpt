@@ -50,13 +50,3 @@ void parse_redirections(char **args, char **file_in, char **file_out)
 		}
 	}
 }
-void parse_respawnable(char **args, int * respawnable) {
-	char **args_start = args;
-	int ct = 0;
-	while (*args){
-		int is_respawnable = !strcmp(*args, "+");
-		if(is_respawnable) {
-
-		}
-	}
-}

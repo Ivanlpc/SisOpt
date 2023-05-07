@@ -16,7 +16,6 @@ To compile and run the program:
 
 **/
 #include "job_control.h" // remember to compile with module job_control.c
-#include "children.h"
 #include "util.h"
 #include "string.h"
 #define MAX_LINE 256 /* 256 chars per line, per command, should be enough. */
@@ -25,7 +24,7 @@ To compile and run the program:
 //                            MAIN
 // -----------------------------------------------------------------------
 job *job_list;
-void execute_command(char *args[], int background, char * file_in, char* file_out);
+
 void sigchld_handler()
 {
 	block_SIGCHLD();
@@ -42,22 +41,10 @@ void sigchld_handler()
 				status_res = analyze_status(status, &info);
 				if (status_res == EXITED || status_res == SIGNALED)
 				{
-					if(job_item -> state == RESPAWNABLE) {
-						
-						char * args[MAX_LINE / 2];
-						printf("Respawned process %s (%d) %s\n", job_item->command, job_item->pgid, status_strings[status_res]);
-						copy_args(args, job_item -> args);
-						delete_job(job_list, job_item);
-						execute_command(args, 2, NULL, NULL);
-						printf("COMMAND->");
-						fflush(stdout);
-
-					} else {
-						printf("Background process %s (%d) %s\n", job_item->command, job_item->pgid, status_strings[status_res]);
-						printf("COMMAND->");
-						fflush(stdout);
-						delete_job(job_list, job_item);
-					}
+					printf("Background process %s (%d) %s\n", job_item->command, job_item->pgid, status_strings[status_res]);
+					printf("COMMAND->");
+					fflush(stdout);
+					delete_job(job_list, job_item);
 				}
 				else if (status_res == SUSPENDED)
 				{
@@ -72,92 +59,89 @@ void sigchld_handler()
 	}
 	unblock_SIGCHLD();
 }
-void execute_command(char *args[], int background, char * file_in, char* file_out) {
+void execute_command(char *args[], int background, char *file_in, char *file_out)
+{
 	int pid_fork, pid_wait;
 	int info;
-	int status;				
+	int status;
 	enum status status_res;
 	pid_fork = fork();
-			if (pid_fork == 0)
-			{ // Proceso hijo
-				new_process_group(getpid());
-				if (background == 0)
-				{
-					set_terminal(getpid());
-				}
-				restore_terminal_signals();
-				FILE *outfile, *infile;
-				int fnum1, fnum2;
+	if (pid_fork == 0)
+	{ // Proceso hijo
+		new_process_group(getpid());
+		if (background == 0)
+		{
+			set_terminal(getpid());
+		}
+		restore_terminal_signals();
+		FILE *outfile, *infile;
+		int fnum1, fnum2;
 
-				if (file_in != NULL)
-				{
-					if (NULL == (infile = fopen(file_in, "r")))
-					{
-						// si hay error, informamos y salimos
-						printf("\tError: abriendo: %s\n", file_in);
-						exit(-1);
-					}
-					fnum1 = fileno(infile);
-					fnum2 = fileno(stdin);
-					if (dup2(fnum1, fnum2) == -1)
-					{
-						// si hay error, informamos y salimos
-						printf("\tError: redireccionando entrada\n");
-						exit(-1);
-					}
-					fclose(infile);
-				}
-				if (file_out != NULL)
-				{
-					if (NULL == (outfile = fopen(file_out, "w")))
-					{
-						// si hay error, informamos y salimos
-						printf("\tError: abriendo: %s\n", file_out);
-						exit(-1);
-					}
-					fnum1 = fileno(outfile);
-					fnum2 = fileno(stdout);
-					if (dup2(fnum1, fnum2) == -1)
-					{
-						// si hay error, informamos y salimos
-						printf("\tError: redireccionando salida\n");
-						exit(-1);
-					}
-					fclose(outfile);
-				}
-				execvp(args[0], args);
-
-				printf("Error, command not found: %s\n", args[0]);
+		if (file_in != NULL)
+		{
+			if (NULL == (infile = fopen(file_in, "r")))
+			{
+				// si hay error, informamos y salimos
+				printf("\tError: abriendo: %s\n", file_in);
 				exit(-1);
 			}
-			else {
-
-				if (background == 0) {
-
-					waitpid(pid_fork, &status, WUNTRACED);
-					set_terminal(getpid());
-
-					status_res = analyze_status(status, &info);
-					if (status_res == SUSPENDED)
-					{
-						add_job(job_list, new_job(pid_fork, args[0], args, STOPPED));
-					}
-					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res], info);
-				}
-				else if (background == 2) {
-					
-					printf("Respawnable job running... pid: %d, command: %s\n", pid_fork, args[0]);
-					job *job_item = new_job(pid_fork, args[0], args, RESPAWNABLE);
-					add_job(job_list, job_item);
-
-				} else {
-					printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
-					job *job_item = new_job(pid_fork, args[0], args, BACKGROUND);
-					add_job(job_list, job_item);
-				}
+			fnum1 = fileno(infile);
+			fnum2 = fileno(stdin);
+			if (dup2(fnum1, fnum2) == -1)
+			{
+				// si hay error, informamos y salimos
+				printf("\tError: redireccionando entrada\n");
+				exit(-1);
 			}
-}
+			fclose(infile);
+		}
+		if (file_out != NULL)
+		{
+			if (NULL == (outfile = fopen(file_out, "w")))
+			{
+				// si hay error, informamos y salimos
+				printf("\tError: abriendo: %s\n", file_out);
+				exit(-1);
+			}
+			fnum1 = fileno(outfile);
+			fnum2 = fileno(stdout);
+			if (dup2(fnum1, fnum2) == -1)
+			{
+				// si hay error, informamos y salimos
+				printf("\tError: redireccionando salida\n");
+				exit(-1);
+			}
+			fclose(outfile);
+		}
+		execvp(args[0], args);
 
+		printf("Error, command not found: %s\n", args[0]);
+		exit(-1);
+	}
+	else
+	{
+
+		if (background == 0)
+		{
+
+			waitpid(pid_fork, &status, WUNTRACED);
+			set_terminal(getpid());
+
+			status_res = analyze_status(status, &info);
+			if (status_res == SUSPENDED)
+			{
+				add_job(job_list, new_job(pid_fork, args[0], STOPPED));
+			}
+			printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res], info);
+		}
+		else
+		{
+			printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
+			job *job_item = new_job(pid_fork, args[0], BACKGROUND);
+			add_job(job_list, job_item);
+		}
+	}
+}
 int main(void)
 {
 	char inputBuffer[MAX_LINE]; /* buffer to hold the command entered */
@@ -169,7 +153,6 @@ int main(void)
 	enum status status_res; /* status processed by analyze_status() */
 	int info;				/* info processed by analyze_status() */
 	char *file_in, *file_out;
-
 	ignore_terminal_signals();
 	signal(SIGCHLD, sigchld_handler);
 
@@ -178,7 +161,6 @@ int main(void)
 	{
 		printf("COMMAND->");
 		fflush(stdout);
-		
 		get_command(inputBuffer, MAX_LINE, args, &background); /* get next command */
 		parse_redirections(args, &file_in, &file_out);
 
@@ -206,7 +188,7 @@ int main(void)
 			int n = 1;
 			if (args[1] != NULL)
 			{
-				n = atoi(args[1]);
+				n = atoi(args[1]); // ASCII
 			}
 			block_SIGCHLD();
 			job *job_item = get_item_bypos(job_list, n);
@@ -215,7 +197,7 @@ int main(void)
 			{
 
 				enum job_state job_state = job_item->state;
-				if (job_state == STOPPED || job_state == BACKGROUND || job_state == RESPAWNABLE)
+				if (job_state == STOPPED || job_state == BACKGROUND)
 				{
 
 					int pid_job_item = job_item->pgid;
@@ -254,7 +236,8 @@ int main(void)
 			job *job_item = get_item_bypos(job_list, n);
 			if (job_item != NULL)
 			{
-				if (job_item->state == STOPPED || job_item -> state == RESPAWNABLE) {
+				if (job_item->state == STOPPED)
+				{
 					int pid_job_item = job_item->pgid;
 					char *name = strdup(job_item->command);
 					job_item->state = BACKGROUND;
@@ -267,10 +250,6 @@ int main(void)
 				printf("Error: Job not found: %d\n", n);
 			}
 			unblock_SIGCHLD();
-		}
-		else if (strcmp(args[0], "children") == 0)
-		{
-			print_children_list();
 		}
 		else
 		{

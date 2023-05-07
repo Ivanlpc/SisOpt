@@ -1,5 +1,5 @@
-#ifndef _PARSE_REDIRECTIONS_H
-#define _PARSE_REDIRECTIONS_H
+#ifndef _UTIL_H
+#define _UTIL_H
 
 #include <stdio.h>
 #include <string.h>
