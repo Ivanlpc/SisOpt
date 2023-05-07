@@ -15,49 +15,147 @@ To compile and run the program:
 	(then type ^D to exit program)
 
 **/
-
 #include "job_control.h" // remember to compile with module job_control.c
+#include "children.h"
+#include "parse_redirections.h"
 #include "string.h"
 #define MAX_LINE 256 /* 256 chars per line, per command, should be enough. */
 
 // -----------------------------------------------------------------------
 //                            MAIN
 // -----------------------------------------------------------------------
-job *lista_trabajos;
-
-void manejador()
+job *job_list;
+void execute_command(char *args[], int background, char * file_in, char* file_out);
+void sigchld_handler()
 {
 	block_SIGCHLD();
-	for (int i = list_size(lista_trabajos); i >= 1; i--)
+	for (int i = list_size(job_list); i >= 1; i--)
 	{
-		job *trabajo = get_item_bypos(lista_trabajos, i);
-		if (trabajo != NULL)
+		job *job_item = get_item_bypos(job_list, i);
+		if (job_item != NULL)
 		{
 			int estado, info;
-			int pid = trabajo->pgid;
+			int pid = job_item->pgid;
 			enum status status_res;
 			if (pid == waitpid(pid, &estado, WUNTRACED | WNOHANG | WCONTINUED))
 			{
 				status_res = analyze_status(estado, &info);
 				if (status_res == EXITED || status_res == SIGNALED)
 				{
-					printf("Background process %s (%d) %s\n", trabajo->command, trabajo->pgid, status_strings[status_res]);
-					printf("COMMAND->");
-					fflush(stdout);
-					delete_job(lista_trabajos, trabajo);
+					if(job_item -> state == RESPAWNABLE) {
+						
+						char * args[MAX_LINE / 2];
+						printf("Respawned process %s (%d) %s\n", job_item->command, job_item->pgid, status_strings[status_res]);
+						copy_args(args, job_item -> args);
+						delete_job(job_list, job_item);
+						execute_command(args, 2, NULL, NULL);
+						printf("COMMAND->");
+						fflush(stdout);
+
+					} else {
+						printf("Background process %s (%d) %s\n", job_item->command, job_item->pgid, status_strings[status_res]);
+						printf("COMMAND->");
+						fflush(stdout);
+						delete_job(job_list, job_item);
+					}
 				}
 				else if (status_res == SUSPENDED)
 				{
-					trabajo->state = STOPPED;
+					job_item->state = STOPPED;
 				}
 				else if (status_res == CONTINUED)
 				{
-					trabajo->state == BACKGROUND;
+					job_item->state == BACKGROUND;
 				}
 			}
 		}
 	}
 	unblock_SIGCHLD();
+}
+void execute_command(char *args[], int background, char * file_in, char* file_out) {
+	int pid_fork, pid_wait;
+	int info;
+	int status;				
+	enum status status_res;
+	pid_fork = fork();
+			if (pid_fork == 0)
+			{ // Proceso hijo
+				new_process_group(getpid());
+				if (background == 0)
+				{
+					set_terminal(getpid());
+				}
+				restore_terminal_signals();
+				FILE *outfile, *infile;
+				int fnum1, fnum2;
+
+				if (file_in != NULL)
+				{
+					if (NULL == (infile = fopen(file_in, "r")))
+					{
+						// si hay error, informamos y salimos
+						printf("\tError: abriendo: %s\n", file_in);
+						exit(-1);
+					}
+					fnum1 = fileno(infile);
+					fnum2 = fileno(stdin);
+					if (dup2(fnum1, fnum2) == -1)
+					{
+						// si hay error, informamos y salimos
+						printf("\tError: redireccionando entrada\n");
+						exit(-1);
+					}
+					fclose(infile);
+				}
+				if (file_out != NULL)
+				{
+					if (NULL == (outfile = fopen(file_out, "w")))
+					{
+						// si hay error, informamos y salimos
+						printf("\tError: abriendo: %s\n", file_out);
+						exit(-1);
+					}
+					fnum1 = fileno(outfile);
+					fnum2 = fileno(stdout);
+					if (dup2(fnum1, fnum2) == -1)
+					{
+						// si hay error, informamos y salimos
+						printf("\tError: redireccionando salida\n");
+						exit(-1);
+					}
+					fclose(outfile);
+				}
+				execvp(args[0], args);
+
+				printf("Error, command not found: %s\n", args[0]);
+				exit(-1);
+			}
+			else {
+
+				if (background == 0) {
+
+					waitpid(pid_fork, &status, WUNTRACED);
+					set_terminal(getpid());
+
+					status_res = analyze_status(status, &info);
+					if (status_res == SUSPENDED)
+					{
+						add_job(job_list, new_job(pid_fork, args[0], args, STOPPED));
+					}
+					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res], info);
+				}
+				else if (background == 2) {
+					
+					printf("Respawnable job running... pid: %d, command: %s\n", pid_fork, args[0]);
+					job *job_item = new_job(pid_fork, args[0], args, RESPAWNABLE);
+					add_job(job_list, job_item);
+
+				} else {
+					printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
+					job *job_item = new_job(pid_fork, args[0], args, BACKGROUND);
+					add_job(job_list, job_item);
+				}
+			}
 }
 
 int main(void)
@@ -70,16 +168,18 @@ int main(void)
 	int status;				/* status returned by wait */
 	enum status status_res; /* status processed by analyze_status() */
 	int info;				/* info processed by analyze_status() */
+	char *file_in, *file_out;
 
 	ignore_terminal_signals();
-	signal(SIGCHLD, manejador);
+	signal(SIGCHLD, sigchld_handler);
 
-	lista_trabajos = new_list("Tareas");
+	job_list = new_list("Jobs");
 	while (1) /* Program terminates normally inside get_command() after ^D is typed*/
 	{
 		printf("COMMAND->");
 		fflush(stdout);
 		get_command(inputBuffer, MAX_LINE, args, &background); /* get next command */
+		parse_redirections(args, &file_in, &file_out);
 
 		if (args[0] == NULL)
 			continue; // if empty command
@@ -97,7 +197,7 @@ int main(void)
 		}
 		else if (strcmp(args[0], "jobs") == 0)
 		{
-			print_job_list(lista_trabajos);
+			print_job_list(job_list);
 		}
 		else if (strcmp(args[0], "fg") == 0)
 		{
@@ -105,103 +205,75 @@ int main(void)
 			int n = 1;
 			if (args[1] != NULL)
 			{
-				n = atoi(args[1]);
+				n = atoi(args[1]); // ASCII
 			}
-			job *trabajo = get_item_bypos(lista_trabajos, n);
+			block_SIGCHLD();
+			job *job_item = get_item_bypos(job_list, n);
 
-			if (trabajo != NULL)
+			if (job_item != NULL)
 			{
-				enum job_state estado = trabajo->state;
-				if (estado == STOPPED || estado == BACKGROUND)
+
+				enum job_state estado = job_item->state;
+				if (estado == STOPPED || estado == BACKGROUND || estado == RESPAWNABLE)
 				{
 
-					int pid_trabajo = trabajo->pgid;
-					set_terminal(pid_trabajo);
-					trabajo->state = FOREGROUND;
-					killpg(pid_trabajo, SIGCONT);
-					waitpid(pid_trabajo, &status, WUNTRACED);
+					int pid_job_item = job_item->pgid;
+					set_terminal(pid_job_item);
+					job_item->state = FOREGROUND;
+					killpg(pid_job_item, SIGCONT);
+					waitpid(pid_job_item, &status, WUNTRACED);
 					set_terminal(getpid());
 					status_res = analyze_status(status, &info);
-					char *comando = strdup(trabajo->command);
+					char *command = strdup(job_item->command);
 					if (status_res == SUSPENDED)
 					{
-						trabajo->state = STOPPED;
+						job_item->state = STOPPED;
 					}
 					else
 					{
-						delete_job(lista_trabajos, trabajo);
+						delete_job(job_list, job_item);
 					}
-					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_trabajo, comando, status_strings[status_res], info);
+					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_job_item, command, status_strings[status_res], info);
 				}
 			}
 			else
 			{
 				printf("Error: Job not found: %d\n", n);
 			}
+			unblock_SIGCHLD();
 		}
 		else if (strcmp(args[0], "bg") == 0)
 		{
-
+			block_SIGCHLD();
 			int n = 1;
 			if (args[1] != NULL)
 			{
-				n = atoi(args[1]); // ASCII
+				n = atoi(args[1]);
 			}
-			job *trabajo = get_item_bypos(lista_trabajos, n);
-			if (trabajo != NULL)
+			job *job_item = get_item_bypos(job_list, n);
+			if (job_item != NULL)
 			{
-				if (trabajo->state == STOPPED)
-				{
-					int pid_trabajo = trabajo->pgid;
-					char *name = strdup(trabajo->command);
-					trabajo->state = BACKGROUND;
-					killpg(pid_trabajo, SIGCONT);
-					printf("Background job running... pid: %d, command: %s\n", pid_trabajo, name);
+				if (job_item->state == STOPPED || job_item -> state == RESPAWNABLE) {
+					int pid_job_item = job_item->pgid;
+					char *name = strdup(job_item->command);
+					job_item->state = BACKGROUND;
+					killpg(pid_job_item, SIGCONT);
+					printf("Background job running... pid: %d, command: %s\n", pid_job_item, name);
 				}
 			}
 			else
 			{
 				printf("Error: Job not found: %d\n", n);
 			}
+			unblock_SIGCHLD();
+		}
+		else if (strcmp(args[0], "children") == 0)
+		{
+			print_children_list();
 		}
 		else
 		{
-			pid_fork = fork();
-			if (pid_fork == 0)
-			{ // Proceso hijo
-				new_process_group(getpid());
-				if (background == 0)
-				{
-					set_terminal(getpid());
-				}
-				restore_terminal_signals();
-				execvp(args[0], args);
-				printf("Error, command not found: %s\n", args[0]);
-				exit(-1);
-			}
-			else
-			{
-
-				if (background == 0)
-				{
-
-					waitpid(pid_fork, &status, WUNTRACED);
-					set_terminal(getpid());
-
-					status_res = analyze_status(status, &info);
-					if (status_res == SUSPENDED)
-					{
-						add_job(lista_trabajos, new_job(pid_fork, args[0], STOPPED));
-					}
-					printf("Foreground pid: %d, command: %s, %s, info: %d\n", pid_fork, args[0], status_strings[status_res], info);
-				}
-				else
-				{
-					printf("Background job running... pid: %d, command: %s\n", pid_fork, args[0]);
-					job *trabajo = new_job(pid_fork, args[0], BACKGROUND);
-					add_job(lista_trabajos, trabajo);
-				}
-			}
+			execute_command(args, background, file_in, file_out);
 		}
 	} // end while
 }

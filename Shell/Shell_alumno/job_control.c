@@ -86,6 +86,19 @@ void get_command(char inputBuffer[], int size, char *args[],int *background)
 				i=length; // make sure the for loop ends now
 
 			}
+			if (inputBuffer[i] == '+') // respawned indicator
+			{
+				*background  = 2;
+				if (start != -1)
+				{
+					args[ct] = &inputBuffer[start];
+					ct++;
+				}
+				inputBuffer[i] = '\0';
+				args[ct] = NULL; /* no more arguments to this command */
+				i=length; // make sure the for loop ends now
+
+			}
 			else if (start == -1) start = i;  // start of new argument
 		}  // end switch
 	}  // end for
@@ -96,16 +109,41 @@ void get_command(char inputBuffer[], int size, char *args[],int *background)
 // -----------------------------------------------------------------------
 /* devuelve puntero a un nodo con sus valores inicializados,
 devuelve NULL si no pudo realizarse la reserva de memoria*/
-job * new_job(pid_t pid, const char * command, enum job_state state)
-{
-	job * aux;
-	aux=(job *) malloc(sizeof(job));
-	aux->pgid=pid;
-	aux->state=state;
-	aux->command=strdup(command);
-	aux->next=NULL;
-	return aux;
+job * new_job(pid_t pid, const char * command, char * args[], enum job_state state) {
+    job * aux;
+    aux = (job *) malloc(sizeof(job));
+    aux->pgid = pid;
+    aux->state = state;
+	if(args != NULL) {
+		int num_args = 0;
+		while (args[num_args] != NULL) {
+			num_args++;
+		}
+		for (int i = 0; i < num_args; i++) {
+			aux->args[i] = strdup(args[i]);
+		}
+		
+
+	}
+    aux->command = strdup(command);
+    aux->next = NULL;
+	
+
+    return aux;
 }
+
+void copy_string_array(char * dst[], char* src[]) {
+	int num_args = 0;
+	while (src[num_args] != NULL) {
+		num_args++;
+	}
+	for (int i = 0; i < num_args; i++) {
+	dst[i] = strdup(src[i]);
+	}
+}
+
+
+
 
 // -----------------------------------------------------------------------
 /* inserta elemento en la cabeza de la lista */

@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "job_control.h": "c",
+        "string.h": "c"
+    }
+}
