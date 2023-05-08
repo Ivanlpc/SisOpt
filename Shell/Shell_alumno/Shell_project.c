@@ -26,6 +26,7 @@ To compile and run the program:
 // -----------------------------------------------------------------------
 job *job_list;
 void execute_command(char *args[], int background, char * file_in, char* file_out);
+
 void sigchld_handler()
 {
 	block_SIGCHLD();

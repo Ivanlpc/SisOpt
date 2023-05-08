@@ -114,32 +114,15 @@ job * new_job(pid_t pid, const char * command, char * args[], enum job_state sta
     aux = (job *) malloc(sizeof(job));
     aux->pgid = pid;
     aux->state = state;
-	if(args != NULL) {
-		int num_args = 0;
-		while (args[num_args] != NULL) {
-			num_args++;
-		}
-		for (int i = 0; i < num_args; i++) {
-			aux->args[i] = strdup(args[i]);
-		}
-		
 
+	if(args != NULL) {
+		copy_args(aux->args, args);
 	}
     aux->command = strdup(command);
     aux->next = NULL;
 	
 
     return aux;
-}
-
-void copy_string_array(char * dst[], char* src[]) {
-	int num_args = 0;
-	while (src[num_args] != NULL) {
-		num_args++;
-	}
-	for (int i = 0; i < num_args; i++) {
-	dst[i] = strdup(src[i]);
-	}
 }
 
 

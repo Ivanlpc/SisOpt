@@ -11,7 +11,7 @@ Some code adapted from "Fundamentos de Sistemas Operativos", Silberschatz et al.
 
 #ifndef _JOB_CONTROL_H
 #define _JOB_CONTROL_H
-
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -85,7 +85,6 @@ void copy_string_array(char * dst[], char * src[]);
 
 #define block_SIGCHLD()   	 block_signal(SIGCHLD, 1)
 #define unblock_SIGCHLD() 	 block_signal(SIGCHLD, 0)
-#define copy_args(args, args2)	copy_string_array(args, args2); //Copy a string array into another string array
 // macro for debugging----------------------------------------------------
 // to debug integer i, use:    debug(i,%d);
 // it will print out:  current line number, function name and file name, and also variable name, value and type
