@@ -1,0 +1,9 @@
+Comando para compilar: gcc Shell_project.c job_control.c util.c children.c -o Shell 
+
+Ampliaciones realizadas:
+
+- Comando children: Este comando imprime una lista con todos los procesos activos, indicando el número de threads, hijos y el comando que lo ha ejecutado
+Para que este comando funcione, se recorre todas las carpetas contenidas en /proc, ya que cada una es un proceso diferente. Dentro de cada una está el archivo "comm"
+que indica el comando que ha iniciado ese proceso. Para saber el número de threads entra a la carpeta /proc/PID/task y el número de directorios que hay dentro es el número de threads que tiene ese proceso. Para conocer el número de hijos que tiene ese proceso lo que hace es recorrerse de nuevo la carpeta /proc/ buscando cuántos procesos tienen como PPid al proceso. Esto lo hace leyendo el archivo "status" dentro de la carpeta del proceso. Una vez tiene todos los datos, lo imprime en consola
+
+- Proceso respawnable: Para este comando he tenido que editar la estructura Job para añadirle el comando junto a sus argumentos (Array de strings). Por lo que cuando el manejador de la señal SIGCHLD le llegue un aviso de que ha terminado un proceso, si es de tipo RESPAWNABLE lo lanzará de nuevo usando el comando y argumentos indicados en el job.
