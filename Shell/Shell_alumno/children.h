@@ -1,13 +1,6 @@
-/*--------------------------------------------------------
-UNIX Shell Project
-function prototypes, macros and type declarations for job_control module
-
-Sistemas Operativos
-Grados I. Informatica, Computadores & Software
-Dept. Arquitectura de Computadores - UMA
-
-
---------------------------------------------------------*/
+/**
+ * Nombre: Iván López Cervantes
+ */
 
 #ifndef _CHILDREN_H
 #define _CHILDREN_H
@@ -16,7 +9,7 @@ Dept. Arquitectura de Computadores - UMA
 #include <stdlib.h>
 #include <dirent.h>
 #include <ctype.h>
-
+#include <string.h>
 
 // -----------------------------------------------------------------------
 //      PRIVATE FUNCTIONS: BETTER USED THROUGH MACROS BELOW
@@ -24,15 +17,11 @@ Dept. Arquitectura de Computadores - UMA
 
 void print_children();
 
-
 // -----------------------------------------------------------------------
 //      PUBLIC MACROS
 // -----------------------------------------------------------------------
 
-
-#define print_children_list() 	 print_children()
-
+#define print_children_list() print_children()
 
 // -----------------------------------------------------------------------
 #endif
-

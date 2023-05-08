@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "job_control.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "dirent.h": "c",
+        "children.h": "c"
     }
 }

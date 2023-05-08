@@ -1,13 +1,7 @@
-// -----------------------------------------------------------------------
-// Parse redirections operators '<' '>' once args structure has been built
-// Call immediately after get_commad()
-//    get_command(..);
-//    char *file_in, *file_out;
-//    parse_redirections(args, &file_in, &file_out);
-//
-// For a valid redirection, a blank space is required before and after
-// redirection operators '<' or '>'
-// -----------------------------------------------------------------------
+/**
+ * Nombre: Iván López Cervantes
+ */
+
 #include <stdio.h>
 #include <string.h>
 #define MAX_LINE 256
@@ -54,15 +48,18 @@ void parse_redirections(char **args, char **file_in, char **file_out)
 }
 /**
  * Copia los elementos de una cadena de carácteres en un array fuente a otro array destino.
- * 
+ *
  * @param dst el array de destino donde se copiarán los elementos de la cadena fuente
  * @param src el array fuente del que se copiarán los elementos
- * 
+ *
  */
 
-void copy_string_array(char * dst[], char* src[]) {
-	
-	for (int i = 0; src[i] != NULL && i < MAX_LINE/2; i++) {
-	dst[i] = strdup(src[i]);
+void copy_string_array(char *dst[], char *src[])
+{
+	/* Recorremos el array src mientras el valor no sea NULL y nos encontremos dentro del límite del Array */
+	for (int i = 0; src[i] != NULL && i < MAX_LINE / 2; i++)
+	{
+		/* Copiamos cada cadena de carácteres (String) al nuevo array */
+		dst[i] = strdup(src[i]);
 	}
 }
