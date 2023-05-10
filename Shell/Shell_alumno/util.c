@@ -57,7 +57,7 @@ void parse_redirections(char **args, char **file_in, char **file_out)
 void copy_string_array(char *dst[], char *src[])
 {
 	/* Recorremos el array src mientras el valor no sea NULL y nos encontremos dentro del límite del Array */
-	for (int i = 0; src[i] != NULL && i < MAX_LINE / 2; i++)
+	for (int i = 0; i < MAX_LINE / 2 && src[i] != NULL; i++)
 	{
 		/* Copiamos cada cadena de carácteres (String) al nuevo array */
 		dst[i] = strdup(src[i]);

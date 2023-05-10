@@ -87,7 +87,7 @@ int get_children_number(int parent_pid)
             {
                 if (strncmp(child_line, "PPid:", 5) == 0)
                 {
-                    child_ppid = atoi(child_line + 6);
+                    child_ppid = atoi(child_line + 5);
                     break;
                 }
             }
