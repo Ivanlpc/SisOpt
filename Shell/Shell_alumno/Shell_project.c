@@ -31,6 +31,16 @@ job *job_list;
 void execute_command(char *args[], int background, char * file_in, char* file_out);
 /* Maneja la señal SIGCHLD*/
 void sigchld_handler();
+void sighup_handler();
+void sighup_handler() {
+	FILE *fp;
+    fp=fopen("hup.txt","a"); // abre un fichero en modo 'append'
+	if(fp == NULL) {
+		printf("Error al abrir el fichero");
+	}
+    fprintf(fp, "SIGHUP recibido.\n"); //escribe en el fichero
+	fclose(fp);
+}
 /* Función principal */
 int main(void);
 
@@ -203,13 +213,13 @@ int main(void)
 	ignore_terminal_signals();
 	/* Usamos la función sigchld_handler para manejar la señal SIGCHLD*/
 	signal(SIGCHLD, sigchld_handler);
+	signal(SIGHUP, sighup_handler);
 	/* Creamos una nueva lista de trabajos con nombre `Jobs`*/
 	job_list = new_list("Jobs");
 	while (1) /* Program terminates normally inside get_command() after ^D is typed*/
 	{
 		printf("COMMAND->");
 		fflush(stdout);
-		
 		get_command(inputBuffer, MAX_LINE, args, &background); /* get next command */
 		parse_redirections(args, &file_in, &file_out); //Comprobamos si se han especificado redirecciones en el comando
 
@@ -314,6 +324,43 @@ int main(void)
 		else if (strcmp(args[0], "children") == 0) {
 			/* Imprimimos los procesos en la terminal */
 			print_children_list();
+		}
+		else if (strcmp(args[0], "currjob") == 0) {
+			job * item = get_item_bypos(job_list, 1);
+			if(item == NULL) {
+				printf("No hay trabajo actual\n");
+			} else {
+				printf("Trabajo actual: PID=%d command=%s\n", item ->pgid, item ->command);
+			}
+		}
+		else if (strcmp(args[0], "deljob") == 0) {
+		job * item = get_item_bypos(job_list, 1);
+			if(item == NULL) {
+				printf("No hay trabajo actual\n");
+			} else {
+				if(item ->state != BACKGROUND) {
+					printf("No se permiten borrar trabajos en segundo plano suspendidos\n");
+				} else {
+					printf("Borrando trabajo actual de la lista de jobs: PID=%d command=%s\n", item ->pgid, item ->command);
+					delete_job(job_list, item);
+				}
+				
+			}
+		}
+		else if (strcmp(args[0], "zjobs") == 0) {
+			print_zombies();
+		}
+		else if(strcmp(args[0], "bgteam") == 0) {
+			if(args[1] == NULL || args[2] == NULL) {
+				printf("El comando bgteam requiere dos argumentos\n");
+				continue;
+			}
+			int n = atoi(args[1]);
+			if(n <= 0) continue;
+			for(int i = 0; i < atoi(args[1]); i++) {
+				
+				execute_command(args + 2, 1, file_in, file_out);
+			}
 		}
 		/* Si no es un comando interno de la terminal, lo ejecutamos buscando el archivo en su path*/
 		else {

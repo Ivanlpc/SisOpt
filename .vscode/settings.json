@@ -3,6 +3,7 @@
         "job_control.h": "c",
         "string.h": "c",
         "dirent.h": "c",
-        "children.h": "c"
+        "children.h": "c",
+        "stdlib.h": "c"
     }
 }

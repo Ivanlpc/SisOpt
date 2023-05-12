@@ -1,9 +1,7 @@
 /**
  * Nombre: Iván López Cervantes
  */
-
-#include <stdio.h>
-#include <string.h>
+#include "util.h"
 #define MAX_LINE 256
 
 void parse_redirections(char **args, char **file_in, char **file_out)
@@ -62,4 +60,31 @@ void copy_string_array(char *dst[], char *src[])
 		/* Copiamos cada cadena de carácteres (String) al nuevo array */
 		dst[i] = strdup(src[i]);
 	}
+}
+
+
+void print_jobs_with_status(char status) {
+    DIR *d; 
+    struct dirent *dir;
+    char buff[2048];
+    d = opendir("/proc");
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            sprintf(buff, "/proc/%s/stat", dir->d_name); 
+            FILE *fd = fopen(buff, "r");
+            if (fd){
+                long pid;     // pid
+                long ppid;    // ppid
+                char state;   // estado: R (runnable), S (sleeping), T(stopped), Z (zombie)
+
+                // La siguiente línea lee pid, state y ppid de /proc/<pid>/stat
+                fscanf(fd, "%ld %s %c %ld", &pid, buff, &state, &ppid);
+				if(state == status) {
+					printf("%ld\n", pid);
+				}
+                fclose(fd);
+            }
+        }
+        closedir(d);
+    }
 }
