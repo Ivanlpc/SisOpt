@@ -23,8 +23,8 @@ void get_command(char inputBuffer[], int size, char *args[], int *background, co
 	ct = 0;
 	*background = 0;
 	int length = 0;
+	/* read_input sirve para reconocer cuando el usuario presiona una flecha */
 	read_input(inputBuffer, size, &length, list);
-	/* read what the user enters on the command line */
 	//length = read(STDIN_FILENO, inputBuffer, size);
 	start = -1;
 	if (length == 0)
@@ -38,6 +38,7 @@ void get_command(char inputBuffer[], int size, char *args[], int *background, co
 		exit(-1); /* terminate with error code of -1 */
 	}
 	if(strncmp(inputBuffer, "\n", 1) != 0 && strncmp(inputBuffer, " ", 1) != 0) {
+		/* length - 1 para no guardar el salto de línea, ya que se añadirá uno cuando se presione `Enter` */
 		add_command(list, new_command(inputBuffer, length - 1)); /*Añadimos comando al historial*/
 	}
 	/* examine every character in the inputBuffer */
