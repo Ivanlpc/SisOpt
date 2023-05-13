@@ -1,21 +1,22 @@
 #include "history.h"
+#include "job_control.h"
 #include "util.h"
 #define CLEAN_CURRENT_LINE() printf("\r\033[K");
 char getch();
 void read_input(char inputBuffer[], int size, int * length, command* list) {
-	int i = 0;
+	int pos = 0;
     int his_pos = 0;
 	while(1) {
-		
+		restore_terminal_signals();
 		int ch = getch();
 		if(ch == 4){
 			*length = 0;
 			break;
 		};
 		if(ch == '\n') {
-			inputBuffer[i] = ch;
-            i++;
-			*length = i;
+			inputBuffer[pos] = ch;
+            pos++;
+			*length = pos;
 			break;
 		} else if (ch == 27) {
 			ch = getch();
@@ -26,7 +27,7 @@ void read_input(char inputBuffer[], int size, int * length, command* list) {
 					if(last_command != NULL) {
 						his_pos++;
 						*length = last_command->length;
-						i = *length;
+						pos = *length;
 						CLEAN_CURRENT_LINE()
 						printf("COMMAND->%s", last_command->args);
 						strcpy(inputBuffer, last_command -> args);
@@ -40,7 +41,7 @@ void read_input(char inputBuffer[], int size, int * length, command* list) {
 					if(last_command != NULL) {
 						his_pos--;
 						*length = last_command->length;
-						i = *length;
+						pos = *length;
 						CLEAN_CURRENT_LINE()
 						printf("COMMAND->%s", last_command->args);
 						strcpy(inputBuffer, last_command -> args);
@@ -52,33 +53,34 @@ void read_input(char inputBuffer[], int size, int * length, command* list) {
 						his_pos = 0;
 						CLEAN_CURRENT_LINE()
 						printf("COMMAND->");
-						i = 0;
+						pos = 0;
 						*length = 0;
 					}
 				}
 				
 			}
 			
-		}else if(ch == 127 ) { // If the user presses backspace or delete
-            if(i > 0) { // If there are characters in the string
-                i--; // Move the index back by one
-				*length = i - 1;
+		}else if(ch == 127 ) { 
+            if(pos > 0) { 
+                pos--; 
+				*length = pos - 1;
 
-                inputBuffer[i] = '\0'; // Set the last character to null to remove it from the string
-                CLEAN_CURRENT_LINE() // Clear the entire input line
-                printf("COMMAND->%s", inputBuffer); // Print the updated string
+                inputBuffer[pos] = '\0';
+                CLEAN_CURRENT_LINE() 
+                printf("COMMAND->%s", inputBuffer); 
 				fflush(stdout);
             }
-        }else { // If the user presses any other key
-			if(i < size - 1){
-				inputBuffer[i] = ch; // Add the character to the string
-            i++; // Move the index forward by one
+        }else { 
+			if(pos < size - 1){
+				inputBuffer[pos] = ch; 
+            pos++; 
 			
-            printf("%c", ch); // Print the character to the screen
+            printf("%c", ch); 
 			fflush(stdout);
 			}
         }
 	}
+	printf("\n");
 }
 
 command *get_command_bypos(command *list, int n)

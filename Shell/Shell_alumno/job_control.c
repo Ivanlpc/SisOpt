@@ -37,7 +37,6 @@ void get_command(char inputBuffer[], int size, char *args[], int *background, co
 		perror("error reading the command");
 		exit(-1); /* terminate with error code of -1 */
 	}
-	printf("\n");
 	if(strncmp(inputBuffer, "\n", 1) != 0 && strncmp(inputBuffer, " ", 1) != 0) {
 		add_command(list, new_command(inputBuffer, length - 1)); /*Añadimos comando al historial*/
 	}
