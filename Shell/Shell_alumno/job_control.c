@@ -4,9 +4,7 @@
 
 #include "job_control.h"
 #ifndef __APPLE__
-#include <malloc.h>
 #endif
-#include <string.h>
 
 // -----------------------------------------------------------------------
 //  get_command() reads in the next command line, separating it into distinct tokens
@@ -14,19 +12,20 @@
 //  null-terminated string.
 // -----------------------------------------------------------------------
 
-void get_command(char inputBuffer[], int size, char *args[], int *background)
+
+void get_command(char inputBuffer[], int size, char *args[], int *background, command * list)
 {
-	int length, /* # of characters in the command line */
+	int  /* # of characters in the command line */
 		i,		/* loop index for accessing inputBuffer array */
 		start,	/* index where beginning of next command parameter is */
 		ct;		/* index of where to place the next parameter into args[] */
 
 	ct = 0;
 	*background = 0;
-
+	int length = 0;
+	read_input(inputBuffer, size, &length, list);
 	/* read what the user enters on the command line */
-	length = read(STDIN_FILENO, inputBuffer, size);
-
+	//length = read(STDIN_FILENO, inputBuffer, size);
 	start = -1;
 	if (length == 0)
 	{
@@ -38,7 +37,10 @@ void get_command(char inputBuffer[], int size, char *args[], int *background)
 		perror("error reading the command");
 		exit(-1); /* terminate with error code of -1 */
 	}
-
+	printf("\n");
+	if(strncmp(inputBuffer, "\n", 1) != 0 && strncmp(inputBuffer, " ", 1) != 0) {
+		add_command(list, new_command(inputBuffer, length - 1)); /*Añadimos comando al historial*/
+	}
 	/* examine every character in the inputBuffer */
 	for (i = 0; i < length; i++)
 	{
@@ -139,6 +141,7 @@ int delete_job(job *list, job *item)
 	if (aux->next)
 	{
 		aux->next = item->next;
+		delete_args(aux ->args);
 		free(item->command);
 		free(item);
 		list->pgid--;

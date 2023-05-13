@@ -61,6 +61,12 @@ void copy_string_array(char *dst[], char *src[])
 		dst[i] = strdup(src[i]);
 	}
 }
+void delete_string_array(char * arr []) {
+	for (int i = 0; i < MAX_LINE / 2 && arr[i] != NULL; i++)
+	{
+		free(arr[i]);
+	}
+}
 
 
 void print_jobs_with_status(char status) {

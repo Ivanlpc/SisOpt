@@ -26,6 +26,7 @@ To compile and run the program:
 // -----------------------------------------------------------------------
 /* Variable global de la lista de trabajos*/
 job *job_list;
+command * history;
 
 /* Ejecuta un comando en la terminal */
 void execute_command(char *args[], int background, char * file_in, char* file_out);
@@ -216,11 +217,13 @@ int main(void)
 	signal(SIGHUP, sighup_handler);
 	/* Creamos una nueva lista de trabajos con nombre `Jobs`*/
 	job_list = new_list("Jobs");
+	history = new_history_list();
+
 	while (1) /* Program terminates normally inside get_command() after ^D is typed*/
 	{
 		printf("COMMAND->");
 		fflush(stdout);
-		get_command(inputBuffer, MAX_LINE, args, &background); /* get next command */
+		get_command(inputBuffer, MAX_LINE, args, &background, history); /* get next command */
 		parse_redirections(args, &file_in, &file_out); //Comprobamos si se han especificado redirecciones en el comando
 
 		if (args[0] == NULL)
@@ -233,7 +236,6 @@ int main(void)
 			 (4) Shell shows a status message for processed command
 			 (5) loop returns to get_commnad() function
 		*/
-
 		/* Si el comando es `cd` */
 		if (strcmp(args[0], "cd") == 0) {
 			/* Cambiamos el directorio al indicado por el primer parámetro del comando*/
@@ -361,6 +363,9 @@ int main(void)
 				
 				execute_command(args + 2, 1, file_in, file_out);
 			}
+		}
+		else if(strcmp(args[0], "history") == 0) {
+			print_history(history);
 		}
 		/* Si no es un comando interno de la terminal, lo ejecutamos buscando el archivo en su path*/
 		else {

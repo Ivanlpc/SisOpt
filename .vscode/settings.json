@@ -4,6 +4,11 @@
         "string.h": "c",
         "dirent.h": "c",
         "children.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "ncurses.h": "c",
+        "malloc.h": "c",
+        "stdio.h": "c",
+        "history.h": "c",
+        "unistd.h": "c"
     }
 }

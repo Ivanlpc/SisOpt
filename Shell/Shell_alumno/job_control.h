@@ -5,10 +5,13 @@
 #ifndef _JOB_CONTROL_H
 #define _JOB_CONTROL_H
 #include "util.h"
+#include "history.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
+#include <malloc.h>
+#include <string.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -45,7 +48,7 @@ typedef struct job_
 //      PUBLIC FUNCTIONS
 // -----------------------------------------------------------------------
 
-void get_command(char inputBuffer[], int size, char *args[], int *background);
+void get_command(char inputBuffer[], int size, char *args[], int *background, command * list);
 
 job *new_job(pid_t pid, const char *command, char *args[], enum job_state state);
 
