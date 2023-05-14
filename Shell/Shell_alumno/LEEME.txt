@@ -1,4 +1,4 @@
-Comando para compilar: gcc Shell_project.c job_control.c util.c children.c -o Shell 
+Comando para compilar: gcc Shell_project.c job_control.c util.c children.c history.c -o Shell 
 
 Ampliaciones realizadas:
 
@@ -7,3 +7,6 @@ Para que este comando funcione, se recorre todas las carpetas contenidas en /pro
 que indica el comando que ha iniciado ese proceso. Para saber el número de threads entra a la carpeta /proc/PID/task y el número de directorios que hay dentro es el número de threads que tiene ese proceso. Para conocer el número de hijos que tiene ese proceso lo que hace es recorrerse de nuevo la carpeta /proc/ buscando cuántos procesos tienen como PPid al proceso. Esto lo hace leyendo el archivo "status" dentro de la carpeta del proceso. Una vez tiene todos los datos, lo imprime en consola
 
 - Proceso respawnable: Para este comando he tenido que editar la estructura Job para añadirle el comando junto a sus argumentos (Array de strings). Por lo que cuando el manejador de la señal SIGCHLD le llegue un aviso de que ha terminado un proceso, si es de tipo RESPAWNABLE lo lanzará de nuevo usando el comando y argumentos indicados en el job.
+
+- Comando history: Para este comando he tenido que modificar la función get_command para que en vez de leer desde el stdin con la función read(), use una función que he definido en el módulo history.c. Esta función obtiene cada carácter que introduce el usuario, lo guarda en un array llamado inputBuffer y lo muestra por pantalla. También se encarga de moverse a través de los diferentes comandos en el historial usando las flechas del teclado. Cuando el usuario quiere ejecutar el comando nada más tiene que presionar Enter y la función get_command se encarga de mover los diferntes argumentos de inputBuffer al array `args`.
+He tenido que crear una estructura `command` que guarda cada comando en el historial. Es una lista enlazada y cada vez que se inserta un nuevo comando a la lista se pone en primera posición, de forma que el primer elemento será el último comando ejecutado. Si el comando está vacío no se añade al historial.
