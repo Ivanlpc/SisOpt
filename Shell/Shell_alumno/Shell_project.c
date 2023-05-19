@@ -98,7 +98,7 @@ void sigchld_handler() {
 				}
 				/* Si el proceso está en ejecución cambiamos el estado del trabajo a BACKGROUND */
 				else if (status_res == CONTINUED) {
-					job_item->state == BACKGROUND;
+					job_item->state = BACKGROUND;
 				}
 			}
 		}
@@ -108,7 +108,7 @@ void sigchld_handler() {
 }
 
 void execute_command(char *args[], int background, char * file_in, char* file_out) {
-	int pid_fork, pid_wait;
+	int pid_fork;
 	int info;
 	int status;				
 	enum status status_res;
@@ -205,7 +205,7 @@ int main(void)
 	int background;				/* equals 1 if a command is followed by '&' */
 	char *args[MAX_LINE / 2];	/* command line (of 256) has max of 128 arguments */
 	// probably useful variables:
-	int pid_fork, pid_wait; /* pid for created and waited process */
+	int pid_fork; /* pid for created and waited process */
 	int status;				/* status returned by wait */
 	enum status status_res; /* status processed by analyze_status() */
 	int info;				/* info processed by analyze_status() */
