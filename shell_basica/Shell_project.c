@@ -52,7 +52,7 @@ void sigchld_handler()
 				}
 				else if (status_res == CONTINUED)
 				{
-					job_item->state == BACKGROUND;
+					job_item->state = BACKGROUND;
 				}
 			}
 		}
